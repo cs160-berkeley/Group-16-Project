@@ -1,0 +1,14 @@
+{
+    "title":"greener_house_device",
+    "description":"This template can be used to create a basic KinomaJS application .",
+    "id":"greener-house-device.project.kinoma.marvell.com",
+    "tags":[
+        "emptySample"
+    ],
+    "Create":{
+        "main":"main"
+    },
+    "Element":{
+        "main":"main"
+    }
+}
