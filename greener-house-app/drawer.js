@@ -1,6 +1,6 @@
 import { Greenhouses } from "greenhouses_around";
 import { name_h, naviBar_h, padding, drawerScreen, 
-		currentScreen, Home, adjustFanIcons, adjustNavButtons } from "main";
+		currentScreen, Home, adjustIrrigationIcons, adjustNavButtons } from "main";
 
 // Skinslet blackSkin = new Skin ({fill: 'black'});let whiteSkin = new Skin ({fill: 'white'});
 let graySkin = new Skin ({fill: '#6c6c6c'});
@@ -41,8 +41,12 @@ export var Drawer = Container.template($ => ({   left: 0, right: undefined, top
    width: drawerWidth, skin: graySkin,   contents: [      Column($, {
       	left: 0, right: 0, top: 0, bottom: 0,
       	contents: [
-      		gh,
-      		new addBtn({}),
+      		//gh,
+      		//new addBtn({}),
+      		// celsious/fer
+      		// rename greenhouse if only one?
+      		// change update frequency
+      		
       	]
       }),   ]}));
 

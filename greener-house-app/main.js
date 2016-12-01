@@ -1,39 +1,50 @@
 // Import layouts from other files and pins
-import { SunlightScreen } from "sunlight";
+import { SunlightScreen, sunlightState } from "sunlight";
 import { TemperatureScreen } from "temperature";
 import { VentilationScreen, fanState } from "ventilation";
-import { IrrigationScreen } from "irrigation";
+import { IrrigationScreen, irrigationState, checkBoxSelected, initial } from "irrigation";
 import { Drawer, ghAroundScreen } from "drawer";
 import Pins from "pins";
 import { CrossFade, Push, Flip, TimeTravel } from 'transition';
+import { currTemperature, currSunlight, currHumidity, currAirFlow, 
+		number, currIrrigationState, currFanState} from "greenhouse";
 
 // Skinslet blackSkin = new Skin ({fill: 'black'});let whiteSkin = new Skin ({fill: 'white'});
 let graySkin = new Skin ({fill: '#999999'});
-let greenSkin = new Skin ({fill: '#71e28b'});
+let greenSkin = new Skin ({fill: '#5CA05C'});
 let navBarSkin = new Skin({      fill: "white",      borders: {left: 0, right: 0, top: 1, bottom: 0},       stroke: "#999999"});
-let fanWhiteSkin = new Skin({      fill: "white",      borders: {left: 1, right: 1, top: 1, bottom: 1},       stroke: "#999999"});
-let fanGreenSkin = new Skin({      fill: "#71e28b",      borders: {left: 1, right: 1, top: 1, bottom: 1},       stroke: "#999999"});
+
+// Irrigation representation
+let drip0 = new Texture("assets/irrigation_0.png");
+let drip1 = new Texture("assets/irrigation_1.png");
+let drip2 = new Texture("assets/irrigation_2.png");
+let drip3 = new Texture("assets/irrigation_3.png");
+let irrigation0 = new Skin({
+      width: 80, height: 30,      texture: drip0,      fill: "white",      aspect: "fit"});
+
+let irrigation1 = new Skin({
+      width: 80, height: 30,      texture: drip1,      fill: "#5CA05C",      aspect: "fit"});
+
+let irrigation2 = new Skin({
+      width: 80, height: 30,      texture: drip2,      fill: "#5CA05C",      aspect: "fit"});
+
+let irrigation3 = new Skin({
+      width: 80, height: 30,      texture: drip3,      fill: "#5CA05C",      aspect: "fit"});
 
 // Fontsvar titleW = new Style({font: 'bold 20px', color: 'white'});
 var titleB = new Style({font: 'bold 20px', color: 'black'});
-var titleG = new Style({font: 'bold 20px', color: '#71e28b'});
+var titleG = new Style({font: 'bold 20px', color: '#216C21'});
 var regularW = new Style({font: '20px', color: 'white'});
 var regularB = new Style({font: '20px', color: 'black'});
-var regularG = new Style({font: '20px', color: '#71e28b'});
+var regularG = new Style({font: '20px', color: '#216C21'});
+var regularR = new Style({font: '20px', color: 'red'});
 var smallB = new Style({font: '12px', color: 'black'});
+var largeB = new Style({font: 'bold 30px', color: 'black'});
 
 // Screen layout sizes
 export var name_h = 50;
 export var naviBar_h = 60;
 export let padding = 10;
-
-
-// Info variables
-export var currTemperature = 86;
-export var currSunlight = 55;
-export var currHumidity = 62;
-export var currAirFlow = 15;
-export var greenhouseNum = 1;
 
 // Nav buttons icons
 var sunlightBtn = "assets/sun.png";
@@ -44,13 +55,10 @@ var irrigationBtn = "assets/irrigation.png";
 var addBtnIcon = "assets/settings.png";
 
 // State variables
-export var greenhouses = [];
-export var UVLights = {};
-export var heater = false;
 export var drawerState = "closed";
 export var drawerScreen = new Drawer();
 
-var fanIcons = [];
+var dropsIcons = [];
 
 // Screen layoutexport var Home = Container.template($ => ({	left: 0, right: 0, top: name_h, bottom: naviBar_h, skin: whiteSkin,	contents: [
 	
@@ -60,7 +68,7 @@ var fanIcons = [];
 				new CurrInfo,
 				
 				// Sunlight diagram
-				new FanDiagram
+				new IrrigationDiagram
 			]
 		}),
 	]}));
@@ -71,61 +79,9 @@ var CurrInfo = Column.template($ => ({
 	contents: [
 	
 		new Label ({ left: padding, right: undefined, top: padding, style: titleG, 
-			string: "Current info:"
+			string: "Current Conditions"
 		}),
-		Line($, {
-			left: 0, right: 0, top: padding, bottom: 0, skin: navBarSkin,
-			contents: [
-				new Picture({left: padding, right: undefined, top: 0, bottom: 0, 
-					url: "assets/sun_b.png", height: 32, width: 32,
-				}),
-				Label($, {
-					left: padding, right: undefined, top: 0, bottom: 0, style: regularB,
-					Behavior: class extends Behavior{						updateState(container, string) {							container.string = "Sunlight: " + Math.round(currSunlight) + "%";						}					}	
-				}),
-			]
-		}),
-		Line($, {
-			left: 0, right: 0, top: 0, bottom: 0, skin: navBarSkin,
-			contents: [
-				new Picture({left: padding, right: undefined, top: 0, bottom: 0, 
-					url: "assets/temp_b.png", height: 32, width: 32,
-				}),
-				Label($, {
-					left: padding, right: undefined, top: 0, bottom: 0, style: regularB,
-					Behavior: class extends Behavior{						updateState(container, string) {							container.string = "Temperature: " + Math.round(currTemperature) + " F";						}					}	
-				}),
-			]
-		}),
-		Line($, {
-			left: 0, right: 0, top: 0, bottom: 0, skin: navBarSkin,
-			contents: [
-				new Picture({left: padding, right: undefined, top: 0, bottom: 0, 
-					url: "assets/humidity.png", height: 32, width: 32,
-				}),
-				Label($, {
-					left: padding, right: undefined, top: 0, bottom: 0, style: regularB,
-					Behavior: class extends Behavior{						updateState(container, string) {							container.string = "Humidity: " + Math.round(currHumidity) + "%";						}					}	
-				}),
-			]
-		}),
-		Line($, {
-			left: 0, right: 0, top: 0, bottom: 0, skin: navBarSkin,
-			contents: [
-				new Picture({left: padding, right: undefined, top: 0, bottom: 0, 
-					url: "assets/airflow.png", height: 32, width: 32,
-				}),
-				Label($, {
-					left: padding, right: undefined, top: 0, bottom: 0, style: regularB,
-					Behavior: class extends Behavior{						updateState(container, string) {							container.string = "Airflow: " + Math.round(currAirFlow) + "%";						}					}	
-				}),
-			]
-		}),
-		/*
-		new Label ({ left: 0, right: 0, top: padding, style: titleG, 
-			string: "Current info"
-		}),
-	
+		
 		Line($, {
 			left: 0, right: 0, top: padding, bottom: 0,
 			contents: [
@@ -134,11 +90,29 @@ var CurrInfo = Column.template($ => ({
 					left: 0, right: 0, top: 0, bottom: 0,
 					contents: [
 					
-					
-						new Picture({left: 0, right: 0, top: 0, bottom: 0, url: "assets/sun_b.png"}),
-						Label($, {
-							left: 0, right: 0, top: 0, bottom: 0, style: regularB, string: "Sunlight: " + Math.round(currSunlight) + "%",
-							Behavior: class extends Behavior{								updateState(container, string) {									container.string = "Sunlight: " + Math.round(currSunlight) + "%";								}							}	
+						Line($, {
+							left: 0, right: 0, top: 0, bottom: undefined,
+							contents: [
+							
+								Label($, {
+									left: padding, right: undefined, top: 0, bottom: undefined, style: largeB, string: Math.round(currSunlight) + "%",
+									Behavior: class extends Behavior{										updateState(container, string) {											container.string = Math.round(currSunlight) + "%";										}									}	
+								}),
+								
+							]
+						}),
+
+						Line($, {
+							left:0, right: 0, top: 0, bottom: undefined,
+							contents: [
+								new Picture({left: padding, right: undefined, top: padding / 2, bottom: undefined,
+									height: 24, width: 24, url: "assets/sun_y.png"}),
+								
+								
+								new Label({ left: padding, right: undefined, top: padding / 2, bottom: undefined,	
+									style: regularB, string: "Sunlight",
+								}),
+							]
 						}),
 					]
 				}),
@@ -147,16 +121,35 @@ var CurrInfo = Column.template($ => ({
 					left: 0, right: 0, top: 0, bottom: 0,
 					contents: [
 					
+						Line($, {
+							left: 0, right: 0, top: 0, bottom: undefined,
+							contents: [
+							
+								Label($, {
+									left: padding, right: undefined, top: 0, bottom: undefined, style: largeB, string: Math.round(currTemperature) + "F",
+									Behavior: class extends Behavior{										updateState(container, string) {											container.string = Math.round(currTemperature) + "F";										}									}	
+								}),
+								
+							]
+						}),
 					
-						new Picture({left: 0, right: 0, top: 0, bottom: 0, url: "assets/temp_b.png"}),
-						Label($, {
-							left: 0, right: 0, top: 0, bottom: 0, style: regularB, string: "Temperature: " + Math.round(currTemperature) + " F",
-							Behavior: class extends Behavior{								updateState(container, string) {									container.string = "Temperature: " + Math.round(currTemperature) + " F";								}							}	
+						Line($, {
+							left:0, right: 0, top: 0, bottom: undefined,
+							contents: [
+								new Picture({left: padding, right: undefined, top: padding / 2, bottom: undefined,
+									height: 24, width: 24, url: "assets/temp_r.png"}),
+								
+								
+								new Label({left: padding, right: undefined, top: padding / 2, bottom: undefined,	
+									style: regularB, string: "Temperature",
+								}),
+							]
 						}),
 					]
-				}),
+				}),	
 			]
 		}),
+		
 		Line($, {
 			left: 0, right: 0, top: 0, bottom: 0,
 			contents: [
@@ -165,11 +158,30 @@ var CurrInfo = Column.template($ => ({
 					left: 0, right: 0, top: 0, bottom: 0,
 					contents: [
 					
-					
-						new Picture({left: 0, right: 0, top: 0, bottom: 0, url: "assets/humidity.png"}),
-						Label($, {
-							left: 0, right: 0, top: 0, bottom: 0, style: regularB, string: "Humidity: " + Math.round(currHumidity) + "%",
-							Behavior: class extends Behavior{								updateState(container, string) {									container.string = "Humidity: " + Math.round(currHumidity) + "%";								}							}	
+						Line($, {
+							left: 0, right: 0, top: 0, bottom: undefined,
+							contents: [
+							
+								Label($, {
+									left: padding, right: undefined, top: 0, bottom: undefined, style: largeB, string: Math.round(currHumidity) + "%",
+									Behavior: class extends Behavior{										updateState(container, string) {											container.string = Math.round(currHumidity) + "%";										}									}	
+								}),
+								
+								
+							]
+						}),
+						
+						Line($, {
+							left:0, right: 0, top: 0, bottom: undefined,
+							contents: [
+								new Picture({left: padding, right: undefined, top: padding / 2, bottom: undefined,
+									height: 24, width: 24, url: "assets/humidity.png"}),
+								
+								
+								new Label({ left: padding, right: undefined, top: padding / 2, bottom: undefined,	
+									style: regularB, string: "Humidity",
+								}),
+							]
 						}),
 					]
 				}),
@@ -178,56 +190,69 @@ var CurrInfo = Column.template($ => ({
 					left: 0, right: 0, top: 0, bottom: 0,
 					contents: [
 					
+						Line($, {
+							left: 0, right: 0, top: 0, bottom: undefined,
+							contents: [
+							
+								Label($, {
+									left: padding, right: undefined, top: 0, bottom: undefined, style: largeB, string: Math.round(currAirFlow) + "%",
+									Behavior: class extends Behavior{										updateState(container, string) {											container.string = Math.round(currAirFlow) + "%";										}									}	
+								}),
+								
+								
+							]
+						}),
 					
-						new Picture({left: 0, right: 0, top: 0, bottom: 0, url: "assets/airflow.png"}),
-						Label($, {
-							left: 0, right: 0, top: 0, bottom: 0, style: regularB, string: "Airflow: " + Math.round(currAirFlow) + "%",
-							Behavior: class extends Behavior{								updateState(container, string) {									container.string = "Airflow: " + Math.round(currAirFlow) + "%";								}							}	
+						Line($, {
+							left:0, right: 0, top: 0, bottom: undefined,
+							contents: [
+								new Picture({left: padding, right: undefined, top: padding / 2, bottom: undefined,
+									height: 24, width: 24, url: "assets/airflow.png"}),
+								
+								
+								new Label({ left: padding, right: undefined, top: padding / 2, bottom: undefined,	
+									style: regularB, string: "Airflow         ",
+								}),
+							]
 						}),
 					]
 				}),
 			]
-		}),*/
+		}),
 	]
 }));
 
-// Sunlight over a day.
-var FanDiagram = Column.template($ => ({
+// Fans state
+var IrrigationDiagram = Column.template($ => ({
 	left: 0, right: 0, top: 0, bottom: 0, height: Home.height / 2, skin: navBarSkin,
 	contents: [
 	
-		new Label({ left: 10, right: undefined, top: padding, bottom : 0, 
-			style: titleG, string: "Current fans state: "
+		new Label({ left: padding, right: undefined, top: padding / 2, bottom : 0, 
+			style: titleG, string: "Current Irrigation "
 		}),
 		
 		Line($, {
-	  		left: 10, right: 10, top: 10, bottom: 0,
+	  		left: padding, right: padding, top: padding / 2, bottom: 0,
 			contents: [			
-				fanIcons[0] = new Fan({skin: fanWhiteSkin, id: 0}),
-				fanIcons[1] = new Fan({skin: fanWhiteSkin, id: 1}),
-				fanIcons[2] = new Fan({skin: fanWhiteSkin, id: 2}),
+				dropsIcons[0] = new IrrigationZone({skin: irrigation0, id: 0}),
+				dropsIcons[1] = new IrrigationZone({skin: irrigation0, id: 1}),
+				dropsIcons[2] = new IrrigationZone({skin: irrigation0, id: 2}),
 			]
 	    }),
 	  
 	  	Line($, {
-	  		left: 10, right: 10, top: 0, bottom: 10,
+	  		left: padding, right: padding, top: padding / 2, bottom: padding / 2,
 			contents: [
-				fanIcons[3] = new Fan({skin: fanWhiteSkin, id: 3}),
-				fanIcons[4] = new Fan({skin: fanWhiteSkin, id: 4}),
-				fanIcons[5] = new Fan({skin: fanWhiteSkin, id: 5}),
+				dropsIcons[3] = new IrrigationZone({skin: irrigation0, id: 3}),
+				dropsIcons[4] = new IrrigationZone({skin: irrigation0, id: 4}),
+				dropsIcons[5] = new IrrigationZone({skin: irrigation0, id: 5}),
 			]
 	  	}),
 	]
 }));
 
-var Fan = Column.template($ => ({
+var IrrigationZone = Column.template($ => ({
 	left: 0, right: 0, top: 0, bottom: 0, skin: $.skin, id: $.id,
-	contents: [
-		Label($, {
-			left: 0, right: 0, top: 0, bottom: 0, 
-			style: regularB, string: fanState[$.id],
-		}),
-	],
 }));
 
 //navigation buttons
@@ -243,6 +268,7 @@ var navBtn = Picture.template($ => ({	left: padding / 2, right: padding / 2, to
         updateNavButtons(container, url) {	
 			if ($.id == 1) {
 				container.url = sunlightBtn;
+				application.distribute("adjustLightSlider");
 			} else if ($.id == 2) {
 				container.url = temperatureBtn;
 				application.distribute("updateCurrTemp");
@@ -250,11 +276,12 @@ var navBtn = Picture.template($ => ({	left: padding / 2, right: padding / 2, to
 			} else if ($.id == 0) {
 				container.url = homeBtn;
 				application.distribute("updateState");
-				adjustFanIcons();
+				adjustIrrigationIcons();
 			} else if ($.id == 3) {
 				container.url = ventilationBtn;
-				application.distribute("adjustVentSlider", 0);
+				application.distribute("adjustVentSlider");
 			} else if ($.id == 4) {
+				initial = true;
 				container.url = irrigationBtn;
 			}
 			application.distribute("updateDrawer");		},
@@ -268,35 +295,25 @@ var navBtn = Picture.template($ => ({	left: padding / 2, right: padding / 2, to
 		},    }),}));
 
 // Changes the fans bg depending on state
-export function adjustFanIcons(){
-	for (var i = 0; i < fanState.length; i++) {
-		if (fanState[i] > 0) {
-			fanIcons[i].skin = fanGreenSkin;
-		} else {
-			fanIcons[i].skin = fanWhiteSkin;
+export function adjustIrrigationIcons(){
+	for (var i = 0; i < irrigationState.length; i++) {
+		if (irrigationState[i] == 0) {
+			dropsIcons[i].skin = irrigation0;
+		} else if (irrigationState[i] == 1) {
+			dropsIcons[i].skin = irrigation1;
+		} else if (irrigationState[i] == 2) {
+			dropsIcons[i].skin = irrigation2;
+		} else if (irrigationState[i] == 3) {
+			dropsIcons[i].skin = irrigation3;
 		}
 	}
 }
 
-// Update button
-let updateBtn = Container.template($ => ({    left: undefined, right: 0, top: 0, bottom: 0, width: 100, active: true,
-    
-    behavior: Behavior({        onCreate: function(content){            this.upSkin = new Skin({                fill: "#999999",                borders: {left: 1, right: 1, top: 1, bottom: 1},             });            this.downSkin = new Skin({                fill: "#71e28b",                 borders: {left: 1, right: 1, top: 1, bottom: 1},             });            content.skin = this.upSkin;        },        onTouchBegan: function(content){            content.skin = this.downSkin;
-            application.distribute("getTemperature");
-            application.distribute("getHumidity");        },        onTouchEnded: function(content){            content.skin = this.upSkin;
-            
-            // fetch info from device and update on screen
-            application.distribute("updateInfo");        },
-        updateInfo(container) {
-         
-            setCurrentState();		}    }),    	contents: [        new Label({ top: 0, bottom: 0, left: 0, right: 0, 
-        style: regularW, string: "update" })   ]}));
-
-// add greenhouse button
+// Settings button
 let settingsBtn = Container.template($ => ({    left: 0, right: undefined, top: 0, bottom: 0, 
     width: 50, active: true,
     
-    behavior: Behavior({        onCreate: function(content){            this.upSkin = new Skin({                fill: "transparent",             });            this.downSkin = new Skin({                fill: "#71e28b",             });            content.skin = this.upSkin;        },        onTouchBegan: function(content){            content.skin = this.downSkin;        },        onTouchEnded: function(content){            content.skin = this.upSkin;
+    behavior: Behavior({        onCreate: function(content){            this.upSkin = new Skin({                fill: "transparent",             });            this.downSkin = new Skin({                fill: "#B9DBB9",             });            content.skin = this.upSkin;        },        onTouchBegan: function(content){            content.skin = this.downSkin;        },        onTouchEnded: function(content){            content.skin = this.upSkin;
             // Opening or closing drawer
             if (drawerState == "closed") {
             	application.add(drawerScreen);
@@ -311,10 +328,6 @@ let settingsBtn = Container.template($ => ({    left: 0, right: undefined, top:
         right: undefined, url: addBtnIcon,
 	        Behavior: class extends Behavior{				updateSettingsBtn(container, url) {					container.url = addBtnIcon;				}			}
         })   ]}));
-
-// Transition for the side drawer.
-/*let transitioningBehavior = Behavior({    onCreate: function(container, data) {        this.numTransitions = 2;    },    onDisplayed: function(container) {        container.interval = 1800;        container.start();    },    onTimeChanged: function(container) {        container.bubble( "onTriggerTransition" );    },    onTriggerTransition: function(container) {        let toScreen = new NumberedScreen({             transitionNumber: (data.index + 1) % this.numTransitions,        });                switch ( data.index ) {            case 0:                container.run( new Push(), container.last, toScreen,                     { duration: 400, direction: "left" } );                break;            case 1:                container.run( new Push(), container.last, toScreen,                     { direction: "right", duration: 400 } );                break;        }        data.index = (data.index + 1) % this.numTransitions;    },})
-*/
 
 export function adjustNavButtons(id) {
 	
@@ -352,17 +365,14 @@ export function adjustNavButtons(id) {
 }
 
 // App's top bar.
-var TopBar = Line.template($ => ({ left: 0, right: 0, top: 0, height: name_h, skin: graySkin,    contents: [
+var TopBar = Line.template($ => ({ left: 0, right: 0, top: 0, height: name_h, skin: greenSkin,    contents: [
     	// add greenhouse button
 		new settingsBtn({}),
 		
 		// Greenhouse's name        Label($, {left: 50, right: undefined, top: 0, bottom: 0,
-        	style: regularW, string: "Greenhouse " + greenhouseNum,
-        	Behavior: class extends Behavior{				updateGhNum(container, string) {					container.string = "Greenhouse " + greenhouseNum;				}			}
-        }),
-        
-        // Update button
-		//new updateBtn({}),    ]}));
+        	style: titleW, string: "Greenhouse " + number,
+        	Behavior: class extends Behavior{				updateGhNum(container, string) {					container.string = "Greenhouse " + number;				}			}
+        }),    ]}));
 
 // Navigation bar
 var NavBar = new Line({ left: 0, right: 0, bottom: 0, 
@@ -410,7 +420,6 @@ var NavBar = new Line({ left: 0, right: 0, bottom: 0,
 
 // Get's current info from device
 function setCurrentState() {
-
 	// update info on screen
 	application.distribute("updateState");
 }

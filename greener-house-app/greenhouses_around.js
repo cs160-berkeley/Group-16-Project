@@ -1,8 +1,8 @@
 import { gh, greenhouseBtn, ghAroundScreen } from "drawer";
 import { fanState } from "ventilation";
 import { padding, drawerScreen, currentScreen, Home,
-		 adjustFanIcons, adjustNavButtons, greenhouseNum, 
-		 currTemperature, currSunlight, currHumidity, currAirFlow } from "main";
+		 adjustIrrigationIcons, adjustNavButtons } from "main";
+import { currTemperature, currSunlight, currHumidity, currAirFlow, 		number, currIrrigationState, currFanState} from "greenhouse";
 
 // Skinslet blackSkin = new Skin ({fill: 'black'});let whiteSkin = new Skin ({fill: 'white'});
 let graySkin = new Skin ({fill: '#6c6c6c'});
@@ -47,7 +47,7 @@ let ghABtn = Container.template($ => ({    left: 0, right: 0, top: 0, bottom: u
             } else if ($.id == 2) {
 	            gh[1] = new greenhouseBtn({text: "Greenhouse 2", id: 2});
 	            //application.distribute("updateInfo", 2);
-	            greenhouseNum = 2;
+	            number = 2;
 	            currTemperature = 62;
 	            currSunlight = 34;
 	            currHumidity = 45;

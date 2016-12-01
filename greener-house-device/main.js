@@ -12,6 +12,12 @@
             	pins: {
             		power: {pin: 58, type: "Power", voltage: 3.3},					analog: {pin: 59, type: "Analog", direction: "input"},					ground: {pin: 60, type: "Ground"}
             	}	
+            },
+            SunlightIn: {
+            	require: "Analog",
+            	pins: {
+            		power: {pin: 61, type: "Power", voltage: 3.3},					analog: {pin: 62, type: "Analog", direction: "input"},					ground: {pin: 63, type: "Ground"}
+            	}	
             },         }, function(success) {           		if (!success) {trace("Failed to configure\n");}
            		else {
            			Pins.share("ws", {zeroconf: true, name: "pins-share"});
