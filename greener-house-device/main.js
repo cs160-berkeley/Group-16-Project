@@ -1,22 +1,28 @@
 let Pins = require("pins");
- class AppBehavior extends Behavior {    onLaunch(application) {        Pins.configure({            Fan: {                require: "Digital",                pins: {                    ground: { pin: 51, type: "Ground" },                    digital: { pin: 52, direction: "output" }                }            },
+ class AppBehavior extends Behavior {    onLaunch(application) {        Pins.configure({            Fans: {                require: "Digital",                pins: {                    ground: { pin: 51, type: "Ground" },                    digital: { pin: 52, direction: "output" }                }            },
             Irrigation: {                require: "Digital",                pins: {                    ground: { pin: 53, type: "Ground" },                    digital: { pin: 54, direction: "output" }                }            },
-            TemperatureIn: {
+            Temperature: {
             	require: "Analog",
             	pins: {
             		power: {pin: 55, type: "Power", voltage: 3.3},					analog: {pin: 56, type: "Analog", direction: "input"},					ground: {pin: 57, type: "Ground"}
             	}	
             },  
-            HumidityIn: {
+            Humidity: {
             	require: "Analog",
             	pins: {
             		power: {pin: 58, type: "Power", voltage: 3.3},					analog: {pin: 59, type: "Analog", direction: "input"},					ground: {pin: 60, type: "Ground"}
             	}	
             },
-            SunlightIn: {
+            Sunlight: {
             	require: "Analog",
             	pins: {
             		power: {pin: 61, type: "Power", voltage: 3.3},					analog: {pin: 62, type: "Analog", direction: "input"},					ground: {pin: 63, type: "Ground"}
+            	}	
+            },
+            Airflow: {
+            	require: "Analog",
+            	pins: {
+            		power: {pin: 64, type: "Power", voltage: 3.3},					analog: {pin: 65, type: "Analog", direction: "input"},					ground: {pin: 66, type: "Ground"}
             	}	
             },         }, function(success) {           		if (!success) {trace("Failed to configure\n");}
            		else {
@@ -36,22 +42,9 @@
 		                		application.distribute("updateFeederState");
 		                	}		                }		            });*/
            		}        });    }}application.behavior = new AppBehavior(); 
-// Skins
-var graySkin = new Skin ({fill: '#202020'});
-
-// Fonts
-var titleG = new Style({font: 'bold 30px', color: '#3AFF3E'});
-var regularW = new Style({font: '20px', color: 'white'});
-
-// Layoutvar DeviceScreen = Column.template($ => ({    left: 0, right: 0, top: 0, bottom: 0, skin: graySkin,    contents: [       new Label({left: 0, right: 0, top: 0, style: titleG, string: "greener house"}),
-       
-       Label($, {left: 0, right: 0, top: 10, style: regularW,
-       		string: "",
-       		Behavior: class extends Behavior{				updateACState(container, string) {					//container.string = ac;				}			}
-       }),
-       
-       Label($, {left: 0, right: 0, top: 10, style: regularW,
-       		string: "",
-       		Behavior: class extends Behavior{				updateFeederState(container, string) {					//container.string = feeder;				}			}
-       }),    ]}));
-application.add(new DeviceScreen());
+// Skinslet blackSkin = new Skin ({fill: 'black'});let whiteSkin = new Skin ({fill: 'white'});let graySkin = new Skin ({fill: '#999999'});let greenSkin = new Skin ({fill: '#5CA05C'});let navBarSkin = new Skin({      fill: "white",      borders: {left: 0, right: 0, top: 1, bottom: 0},       stroke: "#999999"});// Irrigation representationlet dripOn = new Texture("assets/irrigation_b.png");let dripOff = new Texture("assets/irrigation_off.png");let irrigationOff = new Skin({      width: 80, height: 30,      texture: dripOff,      fill: "white",      aspect: "fit"});let irrigationOn = new Skin({      width: 80, height: 30,      texture: dripOn,      fill: "#5CA05C",      aspect: "fit"});// Fontsvar titleW = new Style({font: 'bold 20px', color: 'white'});var titleB = new Style({font: 'bold 20px', color: 'black'});var titleG = new Style({font: 'bold 20px', color: '#216C21'});var regularW = new Style({font: '20px', color: 'white'});var regularB = new Style({font: '20px', color: 'black'});var regularG = new Style({font: '20px', color: '#216C21'});var regularR = new Style({font: '20px', color: 'red'});var smallB = new Style({font: '12px', color: 'black'});var midB = new Style({font: '18px', color: 'black'});var largeB = new Style({font: 'bold 25px', color: 'black'});var waterCanIcons = [];var currSunlight = 60;
+var currHumidity = 45;
+var currAirFlow = 10;
+var currTemperature = 84;// Screen layout
+let padding = 10;export var Home = Container.template($ => ({	left: 0, right: 0, top: 0, bottom: 0, skin: whiteSkin,	contents: [			Column($, { left: 0, right: 0, top: 0, bottom: 0,			contents: [				// Current info				new CurrInfo,								// Sunlight diagram				new IrrigationDiagram			]		}),	]}));// Current conditions inside the greenhouse.var CurrInfo = Column.template($ => ({	left: 0, right: 0, top: 0, bottom: undefined, height: 150,	contents: [			new Label ({ left: padding, right: undefined, top: padding / 2, style: titleG, 			string: "Current Conditions"		}),		Line($, {			left: 0, right: 0, top: padding / 2, bottom: 0,			contents: [							Column($, {					left: 0, right: 0, top: 0, bottom: 0,					contents: [											Line($, {							left: 0, right: 0, top: 0, bottom: undefined,							contents: [															Label($, {									left: padding, right: undefined, top: 0, bottom: undefined, style: largeB, string: Math.round(currSunlight) + "%",									Behavior: class extends Behavior{										updateState(container, string) {											container.string = Math.round(currSunlight) + "%";										}									}									}),																Picture($, {									left: padding * 2, right: undefined, top: 0, bottom: undefined,									Behavior: class extends Behavior{										updateState(container, url) {											container.url = "assets/on.png";										}									}									}),															]						}),						Line($, {							left:0, right: 0, top: 0, bottom: undefined,							contents: [								new Picture({left: padding, right: undefined, top: padding / 2, bottom: undefined,									height: 24, width: 24, url: "assets/sun_y.png"}),																								new Label({ left: padding, right: undefined, top: 0, bottom: 0,										style: midB, string: "Sunlight",								}),							]						}),					]				}),								Column($, {					left: 0, right: 0, top: 0, bottom: 0,					contents: [											Line($, {							left: 0, right: 0, top: 0, bottom: undefined,							contents: [															Label($, {									left: padding, right: undefined, top: 0, bottom: undefined, style: largeB, string: Math.round(currAirFlow) + "%",									Behavior: class extends Behavior{										updateState(container, string) {											container.string = Math.round(currAirFlow) + "%";										}									}									}),																Picture($, {									left: padding * 2, right: undefined, top: 0, bottom: undefined,									Behavior: class extends Behavior{										updateState(container, url) {											container.url = "assets/off.png";										}									}									}),																							]						}),											Line($, {							left:0, right: 0, top: 0, bottom: undefined,							contents: [								new Picture({left: padding, right: undefined, top: padding / 2, bottom: undefined,									height: 24, width: 24, url: "assets/airflow.png"}),																								new Label({ left: padding, right: undefined, top: 0, bottom: 0,										style: midB, string: "Airflow         ",								}),							]						}),					]				}),					]		}),				Line($, {			left: 0, right: 0, top: 0, bottom: 0,			contents: [							Column($, {					left: 0, right: 0, top: 0, bottom: 0,					contents: [											Line($, {							left: 0, right: 0, top: 0, bottom: undefined,							contents: [															Label($, {									left: padding, right: undefined, top: 0, bottom: undefined, style: largeB, string: Math.round(currHumidity) + "%",									Behavior: class extends Behavior{										updateState(container, string) {											container.string = Math.round(currHumidity) + "%";										}									}									}),																Picture($, {									left: padding * 2, right: undefined, top: 0, bottom: undefined,									Behavior: class extends Behavior{										updateState(container, url) {											container.url = "assets/in_progress.png";										}									}									}),																							]						}),												Line($, {							left:0, right: 0, top: 0, bottom: undefined,							contents: [								new Picture({left: padding, right: undefined, top: padding / 2, bottom: undefined,									height: 24, width: 24, url: "assets/humidity.png"}),																								new Label({ left: padding, right: undefined, top: 0, bottom: 0,										style: midB, string: "Humidity",								}),							]						}),					]				}),								Column($, {					left: 0, right: 0, top: 0, bottom: 0,					contents: [											Line($, {							left: 0, right: 0, top: 0, bottom: undefined,							contents: [															Label($, {									left: padding, right: undefined, top: 0, bottom: undefined, style: largeB, string: Math.round(currTemperature) + "F",									Behavior: class extends Behavior{										updateState(container, string) {											container.string = Math.round(currTemperature) + "F";										}									}									}),																Picture($, {									left: padding * 2, right: undefined, top: 0, bottom: undefined,									Behavior: class extends Behavior{										updateState(container, url) {											container.url = "assets/in_progress.png";										}									}									}),															]						}),											Line($, {							left:0, right: 0, top: 0, bottom: undefined,							contents: [								new Picture({left: padding, right: undefined, top: padding / 2, bottom: undefined,									height: 24, width: 24, url: "assets/temp_r.png"}),																								new Label({left: padding, right: undefined, top: 0, bottom: 0,										style: midB, string: "Temperature",								}),							]						}),					]				}),			]		}),	]}));// Fans statevar IrrigationDiagram = Column.template($ => ({	left: 0, right: 0, top: 0, bottom: 0, height: Home.height / 2, skin: navBarSkin,	contents: [			new Label({ left: padding, right: undefined, top: padding / 2, bottom : 0, 			style: titleG, string: "Current Irrigation "		}),				Line($, {	  		left: padding, right: padding, top: padding / 2, bottom: 0,			contents: [							waterCanIcons[0] = new IrrigationZone({skin: irrigationOff, id: 0}),				waterCanIcons[1] = new IrrigationZone({skin: irrigationOff, id: 1}),				waterCanIcons[2] = new IrrigationZone({skin: irrigationOff, id: 2}),			]	    }),	  	  	Line($, {	  		left: padding, right: padding, top: padding / 2, bottom: padding / 2,			contents: [				waterCanIcons[3] = new IrrigationZone({skin: irrigationOff, id: 3}),				waterCanIcons[4] = new IrrigationZone({skin: irrigationOff, id: 4}),				waterCanIcons[5] = new IrrigationZone({skin: irrigationOff, id: 5}),			]	  	}),	]}));var IrrigationZone = Column.template($ => ({	left: 0, right: 0, top: 0, bottom: 0, skin: $.skin, id: $.id,}));// Changes the fans bg depending on stateexport function adjustIrrigationIcons(){	for (var i = 0; i < irrigationState.length; i++) {		if (irrigationState[i] < 1) {			waterCanIcons[i].skin = irrigationOff;		} else {			waterCanIcons[i].skin = irrigationOn;		}	}}/* Application definition */export var currentScreen = new Home();
+application.add(currentScreen);

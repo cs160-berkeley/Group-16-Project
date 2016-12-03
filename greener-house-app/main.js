@@ -1,45 +1,27 @@
 // Import layouts from other files and pins
 import { SunlightScreen, sunlightState } from "sunlight";
-import { TemperatureScreen } from "temperature";
-import { VentilationScreen, fanState } from "ventilation";
-import { IrrigationScreen, irrigationState, checkBoxSelected, initial } from "irrigation";
-import { Drawer, ghAroundScreen } from "drawer";
+import { TemperatureScreen, heaterState } from "temperature";
+import { VentilationScreen, fanState, humidityState } from "ventilation";
+import { IrrigationScreen, irrigationState, initial } from "irrigation";
+import { Drawer, degree } from "drawer";
 import Pins from "pins";
-import { CrossFade, Push, Flip, TimeTravel } from 'transition';
-import { currTemperature, currSunlight, currHumidity, currAirFlow, 
-		number, currIrrigationState, currFanState} from "greenhouse";
 
-// Skinslet blackSkin = new Skin ({fill: 'black'});let whiteSkin = new Skin ({fill: 'white'});
-let graySkin = new Skin ({fill: '#999999'});
-let greenSkin = new Skin ({fill: '#5CA05C'});
-let navBarSkin = new Skin({      fill: "white",      borders: {left: 0, right: 0, top: 1, bottom: 0},       stroke: "#999999"});
+// Skinslet brownSkin = new Skin ({fill: '#C89A73'});
+let darkBrownSkin = new Skin ({fill: '#875429'});let whiteSkin = new Skin ({fill: 'white'});
+let greenSkin = new Skin ({fill: '#5CA05C'}); 
 
 // Irrigation representation
-let drip0 = new Texture("assets/irrigation_0.png");
-let drip1 = new Texture("assets/irrigation_1.png");
-let drip2 = new Texture("assets/irrigation_2.png");
-let drip3 = new Texture("assets/irrigation_3.png");
-let irrigation0 = new Skin({
-      width: 80, height: 30,      texture: drip0,      fill: "white",      aspect: "fit"});
-
-let irrigation1 = new Skin({
-      width: 80, height: 30,      texture: drip1,      fill: "#5CA05C",      aspect: "fit"});
-
-let irrigation2 = new Skin({
-      width: 80, height: 30,      texture: drip2,      fill: "#5CA05C",      aspect: "fit"});
-
-let irrigation3 = new Skin({
-      width: 80, height: 30,      texture: drip3,      fill: "#5CA05C",      aspect: "fit"});
+let dripOn = "assets/irrigation_on.png";
+let dripOff = "assets/irrigation_off.png";
 
 // Fontsvar titleW = new Style({font: 'bold 20px', color: 'white'});
 var titleB = new Style({font: 'bold 20px', color: 'black'});
-var titleG = new Style({font: 'bold 20px', color: '#216C21'});
 var regularW = new Style({font: '20px', color: 'white'});
 var regularB = new Style({font: '20px', color: 'black'});
-var regularG = new Style({font: '20px', color: '#216C21'});
-var regularR = new Style({font: '20px', color: 'red'});
-var smallB = new Style({font: '12px', color: 'black'});
-var largeB = new Style({font: 'bold 30px', color: 'black'});
+var smallW = new Style({font: 'bold 12px', color: 'white'});
+var smallB = new Style({font: 'bold 12px', color: 'black'});
+var midB = new Style({font: '18px', color: 'black'});
+var largeB = new Style({font: 'bold 40px', color: 'black'});
 
 // Screen layout sizes
 export var name_h = 50;
@@ -49,16 +31,36 @@ export let padding = 10;
 // Nav buttons icons
 var sunlightBtn = "assets/sun.png";
 var temperatureBtn = "assets/temp.png";
-var homeBtn = "assets/home_g.png";
+var homeBtn = "assets/home_w.png";
 var ventilationBtn = "assets/fan.png";
 var irrigationBtn = "assets/irrigation.png";
-var addBtnIcon = "assets/settings.png";
+var settingsIcon = "assets/settings.png";
 
-// State variables
+// Drawer variables
 export var drawerState = "closed";
 export var drawerScreen = new Drawer();
 
-var dropsIcons = [];
+var waterCanIcons = [];
+var navBarColumns = [];
+var navBarLabels = [];
+
+// Greenhouse conditions
+export var currTemperature = 0;
+export var currHumidity = 0;
+export var currAirflow = 0;
+export var currSunlight = 0;
+
+// Info icons
+let off = "assets/off.png";
+let on = "assets/on.png";
+let inProgress = "assets/in_progress.png";
+var airflowIcon = off;
+var lightIcon = off;
+var humidityIcon = "";
+var temperatureIcon = "";
+
+// Update info frequency in miliseconds
+export var updateFreq = 2345;
 
 // Screen layoutexport var Home = Container.template($ => ({	left: 0, right: 0, top: name_h, bottom: naviBar_h, skin: whiteSkin,	contents: [
 	
@@ -67,50 +69,51 @@ var dropsIcons = [];
 				// Current info
 				new CurrInfo,
 				
-				// Sunlight diagram
-				new IrrigationDiagram
+				// Irrigation diagram
+				new IrrigationDiagram,
 			]
 		}),
 	]}));
 
 // Current conditions inside the greenhouse.
 var CurrInfo = Column.template($ => ({
-	left: 0, right: 0, top: 0, bottom: undefined, height: 250,
+	left: 0, right: 0, top: 0, bottom: 0,
 	contents: [
 	
-		new Label ({ left: padding, right: undefined, top: padding, style: titleG, 
+		new Label ({ left: 0, right: 0, top: padding * 2, bottom: padding * 3, style: titleB, 
 			string: "Current Conditions"
 		}),
 		
 		Line($, {
-			left: 0, right: 0, top: padding, bottom: 0,
+			left: padding * 2, right: 0, top: 0, bottom: 0,
 			contents: [
 			
 				Column($, {
-					left: 0, right: 0, top: 0, bottom: 0,
+					left: 0, right: 0, top: 0, bottom: 0, name: "sunlight",
 					contents: [
 					
 						Line($, {
-							left: 0, right: 0, top: 0, bottom: undefined,
+							left: 0, right: 0, top: 0, bottom: 0,
 							contents: [
 							
 								Label($, {
-									left: padding, right: undefined, top: 0, bottom: undefined, style: largeB, string: Math.round(currSunlight) + "%",
+									left: padding, right: undefined, top: 0, bottom: 0, style: largeB, string: Math.round(currSunlight) + "%",
 									Behavior: class extends Behavior{										updateState(container, string) {											container.string = Math.round(currSunlight) + "%";										}									}	
 								}),
 								
+								Picture($, {									left: padding * 2, right: undefined, top: 0, bottom: 0, width: 24, height: 24,									Behavior: class extends Behavior{										updateState(container, url) {											container.url = lightIcon;										}									}									}),	
 							]
 						}),
 
 						Line($, {
-							left:0, right: 0, top: 0, bottom: undefined,
+							left:0, right: 0, top: padding, bottom: 0,
 							contents: [
-								new Picture({left: padding, right: undefined, top: padding / 2, bottom: undefined,
+								new Picture({left: padding, right: undefined, top: 0, bottom: 0,
 									height: 24, width: 24, url: "assets/sun_y.png"}),
 								
 								
-								new Label({ left: padding, right: undefined, top: padding / 2, bottom: undefined,	
-									style: regularB, string: "Sunlight",
+								new Label({ left: padding, right: undefined, top: 0, bottom: 0,	
+									style: midB, string: "Sunlight",
 								}),
 							]
 						}),
@@ -118,40 +121,43 @@ var CurrInfo = Column.template($ => ({
 				}),
 				
 				Column($, {
-					left: 0, right: 0, top: 0, bottom: 0,
+					left: 0, right: 0, top: 0, bottom: 0, name: "airflow",
 					contents: [
 					
 						Line($, {
-							left: 0, right: 0, top: 0, bottom: undefined,
+							left: 0, right: 0, top: 0, bottom: 0,
 							contents: [
 							
 								Label($, {
-									left: padding, right: undefined, top: 0, bottom: undefined, style: largeB, string: Math.round(currTemperature) + "F",
-									Behavior: class extends Behavior{										updateState(container, string) {											container.string = Math.round(currTemperature) + "F";										}									}	
+									left: padding, right: undefined, top: 0, bottom: 0, style: largeB, string: Math.round(currAirflow) + "%",
+									Behavior: class extends Behavior{										updateState(container, string) {											container.string = Math.round(currAirflow) + "%";										}									}	
 								}),
 								
+								Picture($, {
+									left: padding * 2, right: undefined, top: 0, bottom: 0, width: 24, height: 24,
+									Behavior: class extends Behavior{										updateState(container, url) {											container.url = airflowIcon;										}									}	
+								}),	
 							]
 						}),
 					
 						Line($, {
-							left:0, right: 0, top: 0, bottom: undefined,
+							left:0, right: 0, top: padding, bottom: 0,
 							contents: [
-								new Picture({left: padding, right: undefined, top: padding / 2, bottom: undefined,
-									height: 24, width: 24, url: "assets/temp_r.png"}),
+								new Picture({left: padding, right: undefined, top: 0, bottom: 0,
+									height: 24, width: 24, url: "assets/airflow.png"}),
 								
-								
-								new Label({left: padding, right: undefined, top: padding / 2, bottom: undefined,	
-									style: regularB, string: "Temperature",
+								new Label({ left: padding, right: undefined, top: 0, bottom: 0,	
+									style: midB, string: "Airflow",
 								}),
 							]
 						}),
 					]
-				}),	
+				}),		
 			]
 		}),
 		
 		Line($, {
-			left: 0, right: 0, top: 0, bottom: 0,
+			left: padding * 2, right: 0, top: padding * 4, bottom: 0,
 			contents: [
 			
 				Column($, {
@@ -159,27 +165,30 @@ var CurrInfo = Column.template($ => ({
 					contents: [
 					
 						Line($, {
-							left: 0, right: 0, top: 0, bottom: undefined,
+							left: 0, right: 0, top: 0, bottom: 0,
 							contents: [
 							
 								Label($, {
-									left: padding, right: undefined, top: 0, bottom: undefined, style: largeB, string: Math.round(currHumidity) + "%",
+									left: padding, right: undefined, top: 0, bottom: 0, style: largeB, string: Math.round(currHumidity) + "%",
 									Behavior: class extends Behavior{										updateState(container, string) {											container.string = Math.round(currHumidity) + "%";										}									}	
 								}),
 								
-								
+								Picture($, {
+									left: padding * 2, right: undefined, top: 0, bottom: 0, width: 24, height: 24,
+									Behavior: class extends Behavior{										updateState(container, url) {											container.url = humidityIcon;										}									}	
+								}),
 							]
 						}),
 						
 						Line($, {
-							left:0, right: 0, top: 0, bottom: undefined,
+							left:0, right: 0, top: padding, bottom: 0,
 							contents: [
-								new Picture({left: padding, right: undefined, top: padding / 2, bottom: undefined,
+								new Picture({left: padding, right: undefined, top: 0, bottom: 0,
 									height: 24, width: 24, url: "assets/humidity.png"}),
 								
 								
-								new Label({ left: padding, right: undefined, top: padding / 2, bottom: undefined,	
-									style: regularB, string: "Humidity",
+								new Label({ left: padding, right: undefined, top: 0, bottom: 0,	
+									style: midB, string: "Humidity",
 								}),
 							]
 						}),
@@ -191,27 +200,27 @@ var CurrInfo = Column.template($ => ({
 					contents: [
 					
 						Line($, {
-							left: 0, right: 0, top: 0, bottom: undefined,
+							left: 0, right: 0, top: 0, bottom: 0,
 							contents: [
 							
 								Label($, {
-									left: padding, right: undefined, top: 0, bottom: undefined, style: largeB, string: Math.round(currAirFlow) + "%",
-									Behavior: class extends Behavior{										updateState(container, string) {											container.string = Math.round(currAirFlow) + "%";										}									}	
+									left: padding, right: undefined, top: 0, bottom: 0, style: largeB, string: Math.round(currTemperature) + "F",
+									Behavior: class extends Behavior{										updateState(container, string) {											container.string = Math.round(currTemperature) + degree + "  ";										}									}	
 								}),
 								
-								
+								Picture($, {									left: padding * 2, right: undefined, top: 0, bottom: 0, width: 24, height: 24,									Behavior: class extends Behavior{										updateState(container, url) {											container.url = temperatureIcon;										}									}									}),	
 							]
 						}),
 					
 						Line($, {
-							left:0, right: 0, top: 0, bottom: undefined,
+							left:0, right: 0, top: padding, bottom: 0,
 							contents: [
-								new Picture({left: padding, right: undefined, top: padding / 2, bottom: undefined,
-									height: 24, width: 24, url: "assets/airflow.png"}),
+								new Picture({left: padding, right: undefined, top: 0, bottom: 0,
+									height: 24, width: 24, url: "assets/temp_r.png"}),
 								
 								
-								new Label({ left: padding, right: undefined, top: padding / 2, bottom: undefined,	
-									style: regularB, string: "Airflow         ",
+								new Label({left: padding, right: undefined, top: 0, bottom: 0,	
+									style: midB, string: "Temperature",
 								}),
 							]
 						}),
@@ -222,45 +231,106 @@ var CurrInfo = Column.template($ => ({
 	]
 }));
 
-// Fans state
-var IrrigationDiagram = Column.template($ => ({
-	left: 0, right: 0, top: 0, bottom: 0, height: Home.height / 2, skin: navBarSkin,
+// Irrigation state diagram
+var IrrigationDiagram = Container.template($ => ({
+	left: 0, right: 0, top: 0, bottom: 0,
 	contents: [
 	
-		new Label({ left: padding, right: undefined, top: padding / 2, bottom : 0, 
-			style: titleG, string: "Current Irrigation "
-		}),
-		
-		Line($, {
-	  		left: padding, right: padding, top: padding / 2, bottom: 0,
-			contents: [			
-				dropsIcons[0] = new IrrigationZone({skin: irrigation0, id: 0}),
-				dropsIcons[1] = new IrrigationZone({skin: irrigation0, id: 1}),
-				dropsIcons[2] = new IrrigationZone({skin: irrigation0, id: 2}),
-			]
-	    }),
-	  
-	  	Line($, {
-	  		left: padding, right: padding, top: padding / 2, bottom: padding / 2,
+		Picture($, {
+   			left: 0, right: undefined, top: undefined, bottom: 0, 
+   			height: 150, width: 400, url: "assets/grass.png",
+   		}),
+   		
+		Picture($, {
+   			left: 0, right: 0, top: undefined, bottom: padding, 
+   			height: 80, width: 250, url: "assets/layout.png",
+   		}),
+   		
+		Column($, {
+			left: padding * 3, right: padding * 3, top: undefined, bottom: padding,
 			contents: [
-				dropsIcons[3] = new IrrigationZone({skin: irrigation0, id: 3}),
-				dropsIcons[4] = new IrrigationZone({skin: irrigation0, id: 4}),
-				dropsIcons[5] = new IrrigationZone({skin: irrigation0, id: 5}),
+			
+				Label($, {
+					left: 0, right: 0, top: 0, bottom: undefined, style: titleB, string: "Current Irrigation",
+				}),
+				
+				Line($, {
+		  			left: 0, right: 0, top: 0, bottom: 0, height: padding * 4,
+					contents: [			
+						waterCanIcons[0] = new waterCan({}),
+						waterCanIcons[1] = new waterCan({}),
+						waterCanIcons[2] = new waterCan({}),
+					]
+			    }),
+			  
+			  	Line($, {
+			  		left: 0, right: 0, top: 0, bottom: 0, height: padding * 4,
+					contents: [
+						waterCanIcons[3] = new waterCan({}),
+						waterCanIcons[4] = new waterCan({}),
+						waterCanIcons[5] = new waterCan({}),
+					]
+			  	}),
 			]
-	  	}),
+		}),	
 	]
 }));
 
-var IrrigationZone = Column.template($ => ({
-	left: 0, right: 0, top: 0, bottom: 0, skin: $.skin, id: $.id,
+// Adjust on/off/in-progress icons
+function adjustInfoIcons() {
+	// Airflow icon
+	if (fanState == 1) {airflowIcon = on;} 
+	else {airflowIcon = off;}
+	
+	// Light icon
+	if (sunlightState == 1) {lightIcon = on;} 
+	else {lightIcon = off;}
+	
+	// Humidity icon
+	if (humidityState == 1) {humidityIcon = inProgress;} 
+	else {humidityIcon = "";}
+	
+	// Temperature icon
+	if (heaterState == 1) {temperatureIcon = inProgress;} 
+	else {temperatureIcon = "";}
+}
+
+// Water can image
+var waterCan = Container.template($ => ({
+	left: 0, right: 0, top: 0, bottom: 0,
+	contents: [
+		Picture($, { 
+			top: padding / 2, bottom: undefined, left: 0, right: 0, name: "water_can",
+        	height: 32, width: 32, url: "assets/irrigation_off.png",
+        	Behavior: class extends Behavior{				updateWaterBtn(container, url) {					container.url = dripOff;				}			}
+        })
+	]
 }));
+
+// Changes the water cans depending on irrigation state
+function adjustWaterCanIcons(){
+	for (var i = 0; i < irrigationState.length; i++) {
+		if (irrigationState[i] < 1) {
+			waterCanIcons[i].water_can.url = dripOff;
+		} else {
+			waterCanIcons[i].water_can.url = dripOn;
+		}
+	}
+}
 
 //navigation buttons
 var navBtn = Picture.template($ => ({	left: padding / 2, right: padding / 2, top: padding / 2, bottom: undefined, 
 	height: 32, width: 32, active: true, url: $.img,
 	
-	behavior: Behavior({        onTouchEnded: function(content){
-            
+	behavior: Behavior({
+        onTouchBegan: function(content){            navBarColumns[$.id].skin = darkBrownSkin;
+            navBarLabels[$.id].style = smallW;        },        onTouchEnded: function(content){
+            for (var i = 0; i < 5; i++) {
+        		if ($.id != i) {
+        			navBarColumns[i].skin = brownSkin;
+        			navBarLabels[i].style = smallB;
+        		}
+        	}
             adjustNavButtons($.id);
             application.remove(currentScreen);
 			currentScreen = new $.nextScreen;            application.add(currentScreen);
@@ -275,8 +345,9 @@ var navBtn = Picture.template($ => ({	left: padding / 2, right: padding / 2, to
 				application.distribute("adjustTempSlider");
 			} else if ($.id == 0) {
 				container.url = homeBtn;
+				adjustInfoIcons();
 				application.distribute("updateState");
-				adjustIrrigationIcons();
+				adjustWaterCanIcons();
 			} else if ($.id == 3) {
 				container.url = ventilationBtn;
 				application.distribute("adjustVentSlider");
@@ -289,25 +360,10 @@ var navBtn = Picture.template($ => ({	left: padding / 2, right: padding / 2, to
 			if (drawerState == "open") {
             	application.remove(drawerScreen);
             	drawerState = "closed";
-            	addBtnIcon = "assets/settings.png";
+            	settingsIcon = "assets/settings.png";
             	application.distribute("updateSettingsBtn");
             }
 		},    }),}));
-
-// Changes the fans bg depending on state
-export function adjustIrrigationIcons(){
-	for (var i = 0; i < irrigationState.length; i++) {
-		if (irrigationState[i] == 0) {
-			dropsIcons[i].skin = irrigation0;
-		} else if (irrigationState[i] == 1) {
-			dropsIcons[i].skin = irrigation1;
-		} else if (irrigationState[i] == 2) {
-			dropsIcons[i].skin = irrigation2;
-		} else if (irrigationState[i] == 3) {
-			dropsIcons[i].skin = irrigation3;
-		}
-	}
-}
 
 // Settings button
 let settingsBtn = Container.template($ => ({    left: 0, right: undefined, top: 0, bottom: 0, 
@@ -318,111 +374,106 @@ let settingsBtn = Container.template($ => ({    left: 0, right: undefined, top:
             if (drawerState == "closed") {
             	application.add(drawerScreen);
             	drawerState = "open";
-            	addBtnIcon = "assets/back.png";
+            	settingsIcon = "assets/back.png";
+            	application.distribute("adjustFreqSlider");
             } else {
             	application.remove(drawerScreen);
             	drawerState = "closed";
-            	addBtnIcon = "assets/settings.png";
+            	settingsIcon = "assets/settings.png";
             }
             application.distribute("updateSettingsBtn");        },    }),    	contents: [        Picture($, { top: padding, bottom: undefined, left: undefined, 
-        right: undefined, url: addBtnIcon,
-	        Behavior: class extends Behavior{				updateSettingsBtn(container, url) {					container.url = addBtnIcon;				}			}
+        right: undefined, url: settingsIcon,
+	        Behavior: class extends Behavior{				updateSettingsBtn(container, url) {					container.url = settingsIcon;				}			}
         })   ]}));
 
-export function adjustNavButtons(id) {
+// Adjust navigation buttons when clicked
+function adjustNavButtons(id) {
 	
 	if (id == 1) {
-		sunlightBtn = "assets/sun_g.png";
+		sunlightBtn = "assets/sun_w.png";
 		temperatureBtn = "assets/temp.png";
 		homeBtn = "assets/home.png";
 		ventilationBtn = "assets/fan.png";
 		irrigationBtn = "assets/irrigation.png";
 	} else if (id == 2) {
 		sunlightBtn = "assets/sun.png";
-		temperatureBtn = "assets/temp_g.png";
+		temperatureBtn = "assets/temp_w.png";
 		homeBtn = "assets/home.png";
 		ventilationBtn = "assets/fan.png";
 		irrigationBtn = "assets/irrigation.png";
 	} else if (id == 0) {
 		sunlightBtn = "assets/sun.png";
 		temperatureBtn = "assets/temp.png";
-		homeBtn = "assets/home_g.png";
+		homeBtn = "assets/home_w.png";
 		ventilationBtn = "assets/fan.png";
 		irrigationBtn = "assets/irrigation.png";
 	} else if (id == 3) {
 		sunlightBtn = "assets/sun.png";
 		temperatureBtn = "assets/temp.png";
 		homeBtn = "assets/home.png";
-		ventilationBtn = "assets/fan_g.png";
+		ventilationBtn = "assets/fan_w.png";
 		irrigationBtn = "assets/irrigation.png";
 	} else if (id == 4) {
 		sunlightBtn = "assets/sun.png";
 		temperatureBtn = "assets/temp.png";
 		homeBtn = "assets/home.png";
 		ventilationBtn = "assets/fan.png";
-		irrigationBtn = "assets/irrigation_g.png";
+		irrigationBtn = "assets/irrigation_w.png";
 	}
 }
 
-// App's top bar.
+// Top bar
 var TopBar = Line.template($ => ({ left: 0, right: 0, top: 0, height: name_h, skin: greenSkin,    contents: [
     	// add greenhouse button
 		new settingsBtn({}),
 		
 		// Greenhouse's name        Label($, {left: 50, right: undefined, top: 0, bottom: 0,
-        	style: titleW, string: "Greenhouse " + number,
-        	Behavior: class extends Behavior{				updateGhNum(container, string) {					container.string = "Greenhouse " + number;				}			}
+        	style: titleW, string: "GreenerHouse",
         }),    ]}));
 
 // Navigation bar
 var NavBar = new Line({ left: 0, right: 0, bottom: 0, 
-	skin: navBarSkin, height: naviBar_h,    contents: [
-    	new Column({left: 0, right: 0, top: 0, bottom: 0,
+	skin: brownSkin, height: naviBar_h,    contents: [
+    	navBarColumns[0] = new Column({left: 0, right: 0, top: 0, bottom: 0, skin: darkBrownSkin,
     		contents: [
     			new navBtn({nextScreen: Home, img: homeBtn, id: 0}),
-    			new Label({left: 0, right: 0, top: 0, bottom: 0, 
-    				style: smallB, string: "Home",
+    			navBarLabels[0] = new Label({left: 0, right: 0, top: 0, bottom: 0, 
+    				style: smallW, string: "Home",
     			}),
     		]
     	}),
-    	new Column({left: 0, right: 0, top: 0, bottom: 0,
+    	navBarColumns[1] = new Column({left: 0, right: 0, top: 0, bottom: 0,
     		contents: [
     			new navBtn({nextScreen: SunlightScreen, img: sunlightBtn, id: 1}),
-    			new Label({left: 0, right: 0, top: 0, bottom: 0, 
+    			navBarLabels[1] = new Label({left: 0, right: 0, top: 0, bottom: 0, 
     				style: smallB, string: "Sunlight",
     			}),
     		]
     	}),
-    	new Column({left: 0, right: 0, top: 0, bottom: 0,
+    	navBarColumns[2] = new Column({left: 0, right: 0, top: 0, bottom: 0,
     		contents: [
     			new navBtn({nextScreen: TemperatureScreen, img: temperatureBtn, id: 2}),
-    			new Label({left: 0, right: 0, top: 0, bottom: 0, 
+    			navBarLabels[2] = new Label({left: 0, right: 0, top: 0, bottom: 0, 
     				style: smallB, string: "Temperature",
     			}),
     		]
     	}),
-    	new Column({left: 0, right: 0, top: 0, bottom: 0,
+    	navBarColumns[3] = new Column({left: 0, right: 0, top: 0, bottom: 0,
     		contents: [
     			new navBtn({nextScreen: VentilationScreen, img: ventilationBtn, id: 3}),
-    			new Label({left: 0, right: 0, top: 0, bottom: 0, 
+    			navBarLabels[3] = new Label({left: 0, right: 0, top: 0, bottom: 0, 
     				style: smallB, string: "Ventilation",
     			}),
     		]
     	}),
-    	new Column({left: 0, right: 0, top: 0, bottom: 0,
+    	navBarColumns[4] = new Column({left: 0, right: 0, top: 0, bottom: 0,
     		contents: [
     			new navBtn({nextScreen: IrrigationScreen, img: irrigationBtn, id: 4}),
-    			new Label({left: 0, right: 0, top: 0, bottom: 0, 
+    			navBarLabels[4] = new Label({left: 0, right: 0, top: 0, bottom: 0, 
     				style: smallB, string: "Irrigation",
     			}),
     		]
     	}),		    ]});
-
-// Get's current info from device
-function setCurrentState() {
-	// update info on screen
-	application.distribute("updateState");
-}
 
 /* Application definition */
 export var currentScreen = new Home();
@@ -438,21 +489,38 @@ export let remotePins;
 		application.add(NavBar); 
 		application.distribute("updateState");      	}
 	onToggleFan(application, value) {        if (remotePins) {
-        	remotePins.invoke("/Fan/write", value);
+        	remotePins.invoke("/Fans/write", value);
         }    }
     onToggleIrrigation(application, value) {        if (remotePins) {
         	remotePins.invoke("/Irrigation/write", value);
-        }    }	
+        }    }
+    getSunlight(application) {
+    	if (remotePins) {
+        	remotePins.repeat("/Sunlight/read", updateFreq, function(result) {                if (result) {
+					currSunlight = result * 100;
+					application.distribute("updateState");                } else {                    trace("no result\n");                }            });
+        }
+    }	
     getTemperature(application) {
     	if (remotePins) {
-        	remotePins.invoke("/TemperatureIn/read", function(result) {                if (result) {
-					currTemperature = result * 100 + 20;                } else {                    trace("no result\n");                }            });
+        	remotePins.repeat("/Temperature/read", updateFreq, function(result) {                if (result && degree == "F") {
+					currTemperature = result * 100 + 20;                } else if (result && degree == "C") {
+					currTemperature = result * 100 - 45;
+					if (currTemperature < -20) {
+						currTemperature = -20;
+					}                } else {                    trace("no result\n");                }            });
         }
     }
     getHumidity(application) {
     	if (remotePins) {
-        	remotePins.invoke("/HumidityIn/read", function(result) {                if (result) {
+        	remotePins.repeat("/Humidity/read", updateFreq, function(result) {                if (result) {
                 	currHumidity = result * 100;                } else {                    trace("no result\n");                }            });
+        }
+    }
+    getAirflow(application) {
+    	if (remotePins) {
+        	remotePins.repeat("/Airflow/read", updateFreq, function(result) {                if (result) {
+                	currAirflow = result * 100;                } else {                    trace("no result\n");                }            });
         }
     }
     setTemperature(application, value) {

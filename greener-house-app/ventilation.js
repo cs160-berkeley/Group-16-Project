@@ -1,7 +1,5 @@
 // Imports
-import { name_h, naviBar_h, padding } from "main";
-import { currTemperature, currSunlight, currHumidity, currAirFlow, 
-		number, currIrrigationState, currFanState} from "greenhouse";
+import { name_h, naviBar_h, padding, currAirflow, currHumidity } from "main";
 import { HorizontalSlider, HorizontalSliderBehavior } from 'sliders';
 import { SwitchButton, SwitchButtonBehavior } from 'switch';
 
@@ -20,10 +18,9 @@ var regularG = new Style({font: '20px', color: '#216C21'});
 export var fanState = 0;
 export var humidityState = 0;
 let maxFanSpeed = 4;
+let minFanSpeed = 1;
 var humidity = 0;
-var fanSpeed = 0;
-
-
+var fanSpeed = 1;
 
 // Screen layout
 export var VentilationScreen = Column.template($ => ({   left: 0, right: 0, top: name_h, bottom: naviBar_h, skin: whiteSkin,   contents: [
@@ -36,18 +33,29 @@ export var VentilationScreen = Column.template($ => ({   left: 0, right: 0, top
 
 // Fan layout.
 var Fan = Column.template($ => ({   left: 0, right: 0, top: 0, bottom: undefined,   contents: [
-	  
-	  Label($, {          left: 0, right: 0, top: padding / 2,          style: titleG, string: "Ventilation"       }),
+
+	  Line($, {
+	  	left: 0, right: 0, top: padding / 2, bottom: undefined,
+		contents: [
+			Picture($, {
+      			left: padding * 10, right: undefined, top: padding / 2, bottom: undefined, url: "assets/fan_g.png",
+      			width: 32, height: 32,
+      		}), 
+      		
+      		Label($, { 	         	left: padding, right: undefined, top: 0, bottom: 0, style: titleB, string: "Ventilation" 	        }),
+		]
+	  }),   
       
-      Picture($, {
-      	left: 0, right: 0, top: padding / 2, bottom: undefined, url: "assets/fan.png",
-      }),      
-      
-      Label($, {          left: 0, right: 0, top: padding / 2,          style: regularB, string: "Switch to adjust fans speed"       }),
-      
+      Label($, {          left: 0, right: 0, top: padding / 2,          style: regularB, string: "Switch to adjust fans speed"       }),            
+              
       onFanSwitch = new MySwitchBtn({id: "fan", value: fanState}),
       
-      fanSlider = new MySlider({ min: 0, max: maxFanSpeed, value: fanSpeed, id: "fan", on: fanState}),
+      Label ($, {left: 0, right: 0, top: padding / 2, 
+      		style: regularB,
+      		Behavior: class extends Behavior{				updateState(container, string) {					container.string = "Current airflow: " + Math.round(currAirflow) + "%";				}			}
+	  }),
+      
+      fanSlider = new MySlider({ min: minFanSpeed, max: maxFanSpeed, value: fanSpeed, id: "fan", on: fanState}),
       
       Label($, { left: 0, right: 0, top: 0, bottom: undefined,
       	style: regularB,
@@ -55,30 +63,48 @@ var Fan = Column.template($ => ({   left: 0, right: 0, top: 0, bottom: undefine
       }),   ]}));
 
 // Humidity layout
-var Humidity = Column.template($ => ({
+var Humidity = Container.template($ => ({
 	left: 0, right: 0, top: padding, bottom: 0, skin: upperLineSkin,
 	contents: [
+	
+		Picture($, {
+	   		left: 0, right: undefined, top: undefined, bottom: 0, 
+	   		height: 150, width: 400, url: "assets/grass.png",
+	   	}),
+					
+		Column($, {
+			left: 0, right: 0, top: 0, bottom: 0, 
+			contents: [
+			
+				Line($, {
+					left: 0, right: 0, top: padding / 2, bottom: 0,
+					contents: [
+					
+						Picture($, {
+				      		left: padding * 10, right: undefined, top: 0, bottom: 0, url: "assets/drop.png",
+				      		width: 32, height: 32,
+				      	}),
+				      	
+						new Label({ 				        	left: padding, right: undefined, top: 0, bottom: 0, style: titleB, string: "Humidity" 				      	}),
+					]
+				}),
+		      	
+		      	Label($, { 			         left: 0, right: 0, top: padding / 2, 			         style: regularB, string: "Switch to adjust humidity", 			    }),
 		
-		new Label({         	left: 0, right: 0, top: padding / 2, style: titleG, string: "Humidity"       	}),
-      	
-      	Picture($, {
-      		left: 0, right: 0, top: padding / 2, bottom: undefined, url: "assets/big_humidity_b.png",
-      	}),
-      	
-      	Label($, { 	         left: 0, right: 0, top: padding / 2, 	         style: regularB, string: "Switch to adjust humidity" 	    }),
-
-      	onHumiditySwitch = new MySwitchBtn({id: "humidity", value: humidityState}),
-
-      	Label ($, {left: 0, right: 0, top: padding / 2, 
-      		style: regularB,
-      		Behavior: class extends Behavior{				updateState(container, string) {					container.string = "Current humidity: " + Math.round(currHumidity) + "%";				}			}
-		}),
+		      	onHumiditySwitch = new MySwitchBtn({id: "humidity", value: humidityState}),
 		
-      	humiditySlider = new MySlider({ min: 0, max: 100, value: humidity, id: "humidity", on: humidityState}),
-      	
-		Label ($, {left: 0, right: 0, top: 0, bottom: padding, style: regularB,
-			Behavior: class extends Behavior{				updateHumidity(container, string) {					container.string = humidity + "%";				}			}
-		}),
+		      	Label ($, {left: 0, right: 0, top: padding / 2, 
+		      		style: regularB,
+		      		Behavior: class extends Behavior{						updateState(container, string) {							container.string = "Current humidity: " + Math.round(currHumidity) + "%";						}					}
+				}),
+				
+		      	humiditySlider = new MySlider({ min: 0, max: 100, value: humidity, id: "humidity", on: humidityState}),
+		      	
+				Label ($, {left: 0, right: 0, top: 0, bottom: padding, style: regularB,
+					Behavior: class extends Behavior{						updateHumidity(container, string) {							container.string = humidity + "%";						}					}
+				}),
+			]
+		}),	
 	]
 }));
 
@@ -88,11 +114,12 @@ var Humidity = Column.template($ => ({
         		if (this.data.value == 1) {
 					fanState = 1;
 					fanSlider.active = true;
-					
+					application.distribute("onToggleFan", 1);
 				} else {
 					fanState = 0;
 					fanSlider.active = false;
-					fanSpeed = 0;
+					fanSpeed = 1;
+					application.distribute("onToggleFan", 0);
 				} 
 				application.distribute("adjustVentSlider", fanSpeed);
 				application.distribute("updateFanString");
@@ -109,7 +136,8 @@ var Humidity = Column.template($ => ({
 				} 
 				application.distribute("adjustVentSlider", humidity);
 				application.distribute("updateHumidity");
-        	}        }    }}));
+        	}
+        	application.distribute("adjustInfoIcons");        }    }}));
 var onFanSwitch;
 var onHumiditySwitch;
 
@@ -120,10 +148,8 @@ var onHumiditySwitch;
  				// when the user uses the slider.
  				fanSpeed = this.data.value;
 	        	fanSpeed = Math.round(fanSpeed);
+	        	currAirflow = currAirflow + fanSpeed * 15;
 	            application.distribute("updateFanString");
-	            if (fanSpeed > 0) {application.distribute("onToggleFan", 1)}
-	            else {application.distribute("onToggleFan", 0)}
-	            
  			} else if ($.id == "humidity") {
  				// Changing humidity using a slider.
  				humidity = this.data.value;
