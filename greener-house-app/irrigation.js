@@ -1,13 +1,21 @@
-import {name_h, naviBar_h, padding} from "main";
+import {name_h, naviBar_h, padding, deviceURL} from "main";
 import { HorizontalSlider, HorizontalSliderBehavior } from 'sliders';
 import { SwitchButton, SwitchButtonBehavior } from 'switch';
 import { LabeledCheckbox } from 'buttons';
+import { TimePicker } from 'time_picker';
 
 // Skinslet blackSkin = new Skin ({fill: 'black'});let whiteSkin = new Skin ({fill: 'white'});
 let graySkin = new Skin ({fill: '#999999'});
 let greenSkin = new Skin ({fill: '#5CA05C'});
-let strokeSkinW = new Skin({      fill: "transparent",});
-let strokeSkinG = new Skin({      fill: "#B9DAB9",});
+
+let transparentSkin = new Skin({fill: "transparent"});
+let strokeSkinG = new Skin({fill: "#B9DAB9"});
+let strokeSkinB = new Skin({fill: "#678F8F"});
+let strokeSkinGray = new Skin({
+	fill: "#E8E8E8",
+	borders: {left: 1, right: 1, top: 1, bottom: 1},
+	stroke: "black",
+});
 
 // Fontsvar titleW = new Style({font: 'bold 20px', color: 'white'});
 var titleB = new Style({font: 'bold 20px', color: 'black'});
@@ -16,28 +24,28 @@ var regularW = new Style({font: '20px', color: 'white'});
 var regularB = new Style({font: '20px', color: 'black'});
 var regularG = new Style({font: '20px', color: '#216C21'});
 var smallB = new Style({font: '15px', color: 'black'});
+var midB = new Style({font: '18px', color: 'black'});
+var midG = new Style({font: '18px', color: '#216C21'});
 
 // Plant images
-let waterOn = "assets/irrigation_b.png";
-let waterOff = "assets/irrigation_off.png";
-let plant1 = "assets/plant1.png";
-let plant2 = "assets/plant2.png";
-let plant3 = "assets/plant3.png";
-let plant4 = "assets/plant4.png";
-let plant5 = "assets/plant5.png";
-let plant6 = "assets/plant6.png";
 let flower = "assets/flower.png";
 
-var sectionClicked;
+export var sectionClicked;
 export var irrigationState = [0,0,0,0,0,0];
 export var initial = true;
-var beginTime = [1,1,1,1,1,1];
-var beginAMPM = [" AM", " AM", " AM", " AM", " AM", " AM"];
-var endTime = [1,1,1,1,1,1];
-var endAMPM = [" AM", " AM", " AM", " AM", " AM", " AM"];
-var waterCanButtons = [];
-//var waterIcon = [plant1, plant2, plant3, plant4, plant5, plant6];
+export var beginTimeH = [8,8,8,8,8,8];
+export var beginTimeM = [0,0,0,0,0,0];
+export var beginAMPM = ["AM", "AM", "AM", "AM", "AM", "AM"];
+export var endTimeH = [8,8,8,8,8,8];
+export var endTimeM = [0,0,0,0,0,0];
+export var endAMPM = ["AM", "AM", "AM", "AM", "AM", "AM"];
+export var waterCanButtons = [];
 var waterIcon = [flower, flower, flower, flower, flower, flower];
+export var timePickerPopUp;
+export var begin = true;
+export var H;
+export var M;
+export var AP;
 
 export var IrrigationScreen = Container.template($ => ({   left: 0, right: 0, top: name_h, bottom: naviBar_h, skin: whiteSkin,   contents: [
    
@@ -52,47 +60,71 @@ export var IrrigationScreen = Container.template($ => ({   left: 0, right: 0, t
 		      	new Label({ left: 0, right: 0, top: padding / 2, bottom: undefined, style: smallB, string: "Tap to select section" }),
 		      	new IrrigationGrid(),
 		
-		      
-		      
 		      	// Water on/off switch
-		      	new Label({ left: padding, right: undefined, top: padding, bottom: undefined, style: smallB, string: "Switch to turn irrigation on" }),
-		      	Line($, { left: 0, right: 0, top: 0, bottom: 0,
-		      		contents: [      	
-		      			onSwitch = new MySwitch({value: 0, on: false}),
-		      		]
-		     	 }),
+		      	new Label({ left: 0, right: 0, top: padding, bottom: undefined, style: smallB, string: "Switch to turn irrigation on" }),
+		      	onSwitch = new MySwitch({value: 0, on: false}),
 		      
-		      	// Begin irrigation slider
-		      	new Label({ left: padding, right: undefined, top: padding, bottom: undefined, style: smallB, string: "Irrigation starting time" }),
-		      	Line($, { left: 0, right: 0, top: 0, bottom: 0,
-		      		contents: [
-		      	
-		      			irrigationBeginSlider = new MySlider({min: 1, max: 24, value: 1, id: "begin", on: false, width: 250}),
-		      		
-		      			Label($, {
-		      				left: padding / 2, right: undefined, top: 0, bottom: 0,
-			      			style: regularB,
-			      			Behavior: class extends Behavior{								updateBeginString(container, string) {									container.string = beginTime[sectionClicked] + beginAMPM[sectionClicked];								}							}
-			      		}),	
-			      	]
-			     }),
-		      
-		      	// End irrigation slider
-		      	new Label({ left: padding, right: undefined, top: padding, bottom: undefined, style: smallB, string: "Irrigation ending time" }),
-		      	Line($, { left: 0, right: 0, top: 0, bottom: 0,
-			      	contents: [
-			      	
-			      		irrigationEndSlider = new MySlider({min: 1, max: 24, value: 1, id: "end", on: false, width: 250}),
-			      		
-			      		Label($, {
-			      			left: padding / 2, right: undefined, top: 0, bottom: 0,
-			      			style: regularB,
-			      			Behavior: class extends Behavior{								updateEndString(container, string) {									container.string = endTime[sectionClicked] + endAMPM[sectionClicked];								}							}
-			      		}),	
-			      	]
-			     }),
+		      	// Time picker
+		      	new Label({ left: 0, right: 0, top: padding, bottom: undefined, style: smallB, string: "Click on the starting and ending time" }),
+		      	new Label({ left: 0, right: 0, top: padding, bottom: undefined, style: smallB, string: "to adjust the schedule" }),
+		     	new Schedule({}),
       		]
       	}),   ]}));
+
+// Watering schedule
+var Schedule = Container.template($ => ({   left: padding * 4, right: undefined, top: padding, bottom: undefined, width: 250, skin: strokeSkinGray,   contents: [
+ 
+      	Line($, {
+		  	left: 0, right: 0, top: 0, bottom: 0, height: padding * 4,
+			contents: [
+				
+				beginBtn = new timeBtn({id: 1, on: false, r: padding, l: padding}),
+				Picture($, {left: 0, right: 0, top: padding / 2, bottom: undefined, height: 24, witdh: 24, url: "assets/next.png"}),
+				endBtn = new timeBtn({id: 2, on: false, r: padding, l: padding}),
+			]
+		}),          	   ]}));
+
+// Time button
+let timeBtn = Container.template($ => ({    left: 0, right: 0, top: 0, bottom: 0, active: $.on,
+    
+    behavior: Behavior({        onTouchBegan: function(content){   
+        	content.time_string.style = midG; 	            if ($.id == 1) {
+            	begin = true;
+            	H = beginTimeH[sectionClicked];
+            	M = beginTimeM[sectionClicked];
+            	AP = beginAMPM[sectionClicked];
+            }
+            else {
+            	begin = false;
+            	H = endTimeH[sectionClicked];
+            	M = endTimeM[sectionClicked];
+            	AP = endAMPM[sectionClicked];
+            }        },        onTouchEnded: function(content){
+        	content.time_string.style = midB; 
+			timePickerPopUp = new TimePicker();
+			application.add(timePickerPopUp);
+			
+			onSwitch.active = false;
+			for (var i = 0; i < waterCanButtons.length; i++) {
+				waterCanButtons[i].active = false;
+			}        },    }),    	contents: [        Label($, {
+			left: 0, right: 0, top: 0, bottom: 0, style: midB, string: "0:00", name: "time_string",
+			Behavior: class extends Behavior{				updateTimeString(container, string) {
+					if (initial) {container.string = "0:00";}
+					else {
+						if ($.id == 1 && beginTimeM[sectionClicked] < 10) {
+							container.string = beginTimeH[sectionClicked] + ":0" + beginTimeM[sectionClicked] + " " + beginAMPM[sectionClicked];
+						} else if ($.id == 1 && beginTimeM[sectionClicked] > 9) {
+							container.string = beginTimeH[sectionClicked] + ":" + beginTimeM[sectionClicked] + " " + beginAMPM[sectionClicked];
+						} else if ($.id == 2 && endTimeM[sectionClicked] < 10) {
+							container.string = endTimeH[sectionClicked] + ":0" + endTimeM[sectionClicked] + " " + endAMPM[sectionClicked];
+						} else if ($.id == 2 && endTimeM[sectionClicked] > 9) {
+							container.string = endTimeH[sectionClicked] + ":" + endTimeM[sectionClicked] + " " + endAMPM[sectionClicked];
+						}
+					}									}			}
+		}),   ]}));
+let beginBtn;
+let endBtn;
 
 // Irrigation sections grid layout.
 var IrrigationGrid = Container.template($ => ({   left: padding * 4, right: undefined, top: padding, bottom: undefined, width: 250,   contents: [
@@ -127,17 +159,24 @@ var IrrigationGrid = Container.template($ => ({   left: padding * 4, right: und
 let waterBtn = Container.template($ => ({    left: 0, right: 0, top: 0, bottom: 0, active: true,
     
     behavior: Behavior({        onCreate: function(content){
-        	this.upSkin = strokeSkinW;
+        	if (irrigationState[$.id] == 1) {
+        		this.upSkin = strokeSkinB;
+        	} else {
+        		this.upSkin = transparentSkin;
+        	}
         	this.downSkin = strokeSkinG;            content.skin = this.upSkin;        },        onTouchBegan: function(content){            content.skin = this.downSkin;
             sectionClicked = $.id;
             onSwitch.active = true;
-            irrigationBeginSlider.active = true;
-            irrigationEndSlider.active = true;        },        onTouchEnded: function(content){
+            application.distribute("updateTimeString");        },        onTouchEnded: function(content){
         	// When a water button clicked, 
         	// change the skin of the rest of them back to white.
         	for (var i = 0; i < waterCanButtons.length; i++) {
         		if ($.id != i) {
-        			waterCanButtons[i].skin = this.upSkin;
+        			if (irrigationState[i] == 1) {
+        				waterCanButtons[i].skin = strokeSkinB;
+        			} else {
+        				waterCanButtons[i].skin = transparentSkin;
+        			}
         		}
         	}
         	initial = false;
@@ -149,82 +188,8 @@ let waterBtn = Container.template($ => ({    left: 0, right: 0, top: 0, bottom:
         	application.distribute("updateBeginString");
         	application.distribute("updateEndString");
         	application.distribute("adjustIrrigationSliders");        },    }),    	contents: [        Picture($, { top: padding / 2, bottom: undefined, left: 0, right: 0, 
-        	height: 28, width: 28, url: waterIcon[$.id],
-	        Behavior: class extends Behavior{				updateWaterBtn(container, url) {					container.url = waterIcon[$.id];				}			}
+        	height: 28, width: 28, url: "assets/flower.png",
         })   ]}));
-
-// Sliderslet MySlider = HorizontalSlider.template($ => ({    left: 10, right: undefined, height: 40, width: $.width, active: $.on,    Behavior: class extends HorizontalSliderBehavior {
-    	        onValueChanged(container) {
- 			if ($.id == "begin" && !initial) {
- 				// Changing the beginning of the irrigation schedule using a slider.
- 				var val = this.data.value;
-	        	val = Math.round(val);
-	        	if (val == 12) {
-	        		beginTime[sectionClicked] = val;
-	        		beginAMPM[sectionClicked] = " PM";
-	        	} else if (val == 24) {
-	        		beginTime[sectionClicked] = val - 12;
-	        		beginAMPM[sectionClicked] = " AM";
-	        	} else if (val > 12) {
-	        		beginTime[sectionClicked] = val - 12;
-	        		beginAMPM[sectionClicked] = " PM";
-	        	}
-	        	else if (val < 12) {
-	        		beginTime[sectionClicked] = val;
-	        		beginAMPM[sectionClicked] = " AM";
-	        	} 	            application.distribute("updateBeginString");
-	            
- 			} else if ($.id == "end" && !initial) {
- 				// Changing the end of the irrigation schedule using a slider.
- 				var val = this.data.value;
-	        	val = Math.round(val);
-	        	if (val == 12) {
-	        		endTime[sectionClicked] = val;
-	        		endAMPM[sectionClicked] = " PM";
-	        	} else if (val == 24) {
-	        		endTime[sectionClicked] = val - 12;
-	        		endAMPM[sectionClicked] = " AM";
-	        	} else if (val > 12) {
-	        		endTime[sectionClicked] = val - 12;
-	        		endAMPM[sectionClicked] = " PM";
-	        	} else if (val < 12) {
-	        		endTime[sectionClicked] = val;
-	        		endAMPM[sectionClicked] = " AM";
-	        	}	            application.distribute("updateEndString");
- 			}          }
-        onTouchEnded(container) {
-        	//adjustIrrigationImages();
-        }
-    
-        // Adjust sliders when 
-        // going back to the irrigation screen.
-        adjustIrrigationSliders(container) {
-        	
-        	
-        	// Adjust begin schedule slider       	
-        	var begin = 1;
-        	if (beginAMPM[sectionClicked] == " PM" && beginTime[sectionClicked] != 12) {
-        		begin = beginTime[sectionClicked] + 12;
-        	} else if (beginTime[sectionClicked] == 12 && beginAMPM[sectionClicked] == " AM") {
-        		begin = beginTime[sectionClicked] + 12;
-        	} else {begin = beginTime[sectionClicked];}
-        	
-        	irrigationBeginSlider.delegate("setValue", begin);
-        	irrigationBeginSlider.delegate("onLayoutChanged");
-        	
-        	// Adjust end schedule slider
-        	var end = 1;
-        	if (endAMPM[sectionClicked] == " PM" &&  endTime[sectionClicked] != 12) {
-        		end = endTime[sectionClicked] + 12;
-        	} else if (endTime[sectionClicked] == 12 && endAMPM[sectionClicked] == " AM") {
-        		end = endTime[sectionClicked] + 12;
-        	} else {end = endTime[sectionClicked];}
-        	
-        	irrigationEndSlider.delegate("setValue", end);
-        	irrigationEndSlider.delegate("onLayoutChanged");
-        }    }}));
-var irrigationBeginSlider;
-var irrigationEndSlider;
 
 function adjustIrrigationImages(){
 	if (irrigationState[sectionClicked] > 0) {         	
@@ -237,25 +202,56 @@ function adjustIrrigationImages(){
 
 // On/off switchlet MySwitch = SwitchButton.template($ => ({    height: 40, width: 100, active: $.on,    Behavior: class extends SwitchButtonBehavior {        onValueChanged(container){
 			if (this.data.value == 1) {
+				beginBtn.active = true;
+				endBtn.active = true;
 				irrigationState[sectionClicked] = 1;
-				irrigationBeginSlider.active = true;
-				irrigationEndSlider.active = true;
+				waterCanButtons[sectionClicked].skin = strokeSkinB;
 				application.distribute("onToggleIrrigation", 1);
 				application.distribute("adjustIrrigationSlider");
-			} else {				
+				if (sectionClicked == 0) {
+					if (deviceURL != "") new Message(deviceURL + "irrigation0On").invoke(Message.JSON).then(json => {});
+				} else if (sectionClicked == 1) {
+					if (deviceURL != "") new Message(deviceURL + "irrigation1On").invoke(Message.JSON).then(json => {});
+				} else if (sectionClicked == 2) {
+					if (deviceURL != "") new Message(deviceURL + "irrigation2On").invoke(Message.JSON).then(json => {});
+				} else if (sectionClicked == 3) {
+					if (deviceURL != "") new Message(deviceURL + "irrigation3On").invoke(Message.JSON).then(json => {});
+				} else if (sectionClicked == 4) {
+					if (deviceURL != "") new Message(deviceURL + "irrigation4On").invoke(Message.JSON).then(json => {});
+				} else if (sectionClicked == 5) {
+					if (deviceURL != "") new Message(deviceURL + "irrigation5On").invoke(Message.JSON).then(json => {});
+				}
+				
+			} else {			
+				beginBtn.active = false;
+				endBtn.active = false;	
 				irrigationState[sectionClicked] = 0;				
-				irrigationBeginSlider.active = false;
-				irrigationEndSlider.active = false;
+				waterCanButtons[sectionClicked].skin = strokeSkinG;
 				application.distribute("onToggleIrrigation", 0);
+				if (sectionClicked == 0) {
+					if (deviceURL != "") new Message(deviceURL + "irrigation0Off").invoke(Message.JSON).then(json => {});
+				} else if (sectionClicked == 1) {
+					if (deviceURL != "") new Message(deviceURL + "irrigation1Off").invoke(Message.JSON).then(json => {});
+				} else if (sectionClicked == 2) {
+					if (deviceURL != "") new Message(deviceURL + "irrigation2Off").invoke(Message.JSON).then(json => {});
+				} else if (sectionClicked == 3) {
+					if (deviceURL != "") new Message(deviceURL + "irrigation3Off").invoke(Message.JSON).then(json => {});
+				} else if (sectionClicked == 4) {
+					if (deviceURL != "") new Message(deviceURL + "irrigation4Off").invoke(Message.JSON).then(json => {});
+				} else if (sectionClicked == 5) {
+					if (deviceURL != "") new Message(deviceURL + "irrigation5Off").invoke(Message.JSON).then(json => {});
+				}
 			}         }
         onSwitch(container, value) {
         	onSwitch.delegate("changeOffset", this.size - value);
         	if (value == 0) {
         		irrigationState[sectionClicked] = 0;
-        		trace("should be 0: " + irrigationState[sectionClicked] + "\n");
+        		this.data.value = 0;
         	} else {
         		irrigationState[sectionClicked] = 1;
-        		trace("should be 1: " + irrigationState[sectionClicked] + "\n");
+        		this.data.value = 1;
         	}
+        	application.distribute("onValueChanged");
+        	waterCanButtons[sectionClicked].skin = strokeSkinG;
         }    }}));
-var onSwitch;
+export var onSwitch;

@@ -1,5 +1,5 @@
 // Imports
-import { name_h, naviBar_h, padding, currAirflow, currHumidity } from "main";
+import { name_h, naviBar_h, padding, currAirflow, currHumidity, deviceURL } from "main";
 import { HorizontalSlider, HorizontalSliderBehavior } from 'sliders';
 import { SwitchButton, SwitchButtonBehavior } from 'switch';
 
@@ -46,7 +46,7 @@ var Fan = Column.template($ => ({   left: 0, right: 0, top: 0, bottom: undefine
 		]
 	  }),   
       
-      Label($, {          left: 0, right: 0, top: padding / 2,          style: regularB, string: "Switch to adjust fans speed"       }),            
+      Label($, {          left: 0, right: 0, top: padding / 2,          style: regularB, string: "Switch to open and close vents"       }),            
               
       onFanSwitch = new MySwitchBtn({id: "fan", value: fanState}),
       
@@ -89,7 +89,7 @@ var Humidity = Container.template($ => ({
 					]
 				}),
 		      	
-		      	Label($, { 			         left: 0, right: 0, top: padding / 2, 			         style: regularB, string: "Switch to adjust humidity", 			    }),
+		      	Label($, { 			         left: 0, right: 0, top: padding / 2, 			         style: regularB, string: "Auto adjust humidity", 			    }),
 		
 		      	onHumiditySwitch = new MySwitchBtn({id: "humidity", value: humidityState}),
 		
@@ -115,11 +115,13 @@ var Humidity = Container.template($ => ({
 					fanState = 1;
 					fanSlider.active = true;
 					application.distribute("onToggleFan", 1);
+					if (deviceURL != "") new Message(deviceURL + "fanOn").invoke(Message.JSON).then(json => {});
 				} else {
 					fanState = 0;
 					fanSlider.active = false;
 					fanSpeed = 1;
 					application.distribute("onToggleFan", 0);
+					if (deviceURL != "") new Message(deviceURL + "fanOff").invoke(Message.JSON).then(json => {});
 				} 
 				application.distribute("adjustVentSlider", fanSpeed);
 				application.distribute("updateFanString");
@@ -128,11 +130,13 @@ var Humidity = Container.template($ => ({
         		if (this.data.value == 1) {
 					humidityState = 1;
 					humiditySlider.active = true;
+					if (deviceURL != "") new Message(deviceURL + "humidityOn").invoke(Message.JSON).then(json => {});
 					
 				} else {
 					humidityState = 0;
 					humiditySlider.active = false;
 					humidity = 0;
+					if (deviceURL != "") new Message(deviceURL + "humidityOff").invoke(Message.JSON).then(json => {});
 				} 
 				application.distribute("adjustVentSlider", humidity);
 				application.distribute("updateHumidity");
@@ -148,7 +152,6 @@ var onHumiditySwitch;
  				// when the user uses the slider.
  				fanSpeed = this.data.value;
 	        	fanSpeed = Math.round(fanSpeed);
-	        	currAirflow = currAirflow + fanSpeed * 15;
 	            application.distribute("updateFanString");
  			} else if ($.id == "humidity") {
  				// Changing humidity using a slider.

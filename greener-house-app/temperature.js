@@ -1,4 +1,4 @@
-import {name_h, naviBar_h, padding, currTemperature } from "main";
+import {name_h, naviBar_h, padding, currTemperature, deviceURL } from "main";
 import { HorizontalSlider, HorizontalSliderBehavior } from 'sliders';
 import { SwitchButton, SwitchButtonBehavior } from 'switch';
 import { degree } from "drawer";
@@ -11,7 +11,7 @@ let greenSkin = new Skin ({fill: '#5CA05C'});
 var titleB = new Style({font: 'bold 20px', color: 'black'});
 var titleG = new Style({font: 'bold 20px', color: '#216C21'});
 var regularW = new Style({font: '20px', color: 'white'});
-var regularB = new Style({font: '20px', color: 'black'});
+var regularB = new Style({font: '16px', color: 'black'});
 var regularG = new Style({font: '20px', color: '#216C21'});
 
 export var heaterState = 0;
@@ -31,6 +31,8 @@ export var TemperatureScreen = Container.template($ => ({   left: 0, right: 0, 
 			      
 			      new Picture({left: 0, right: 0, top: padding, bottom: undefined, url: "assets/big_temp_r.png"}),
 			      
+			      Label($, { 			         left: 0, right: 0, top: padding * 2, 			         style: regularB, string: "Auto adjust temperature", 			      }),
+			      
 			      heaterSwitch = new MySwitch({id: "light", value: heaterState}),
 			      
 			      Label($, { 			         left: 0, right: 0, top: padding, bottom: undefined, style: regularB, 
@@ -47,10 +49,12 @@ export var TemperatureScreen = Container.template($ => ({   left: 0, right: 0, 
 			if (this.data.value == 1) {
 				tempSlider.active = true;
 				heaterState = 1;
+				if (deviceURL != "") new Message(deviceURL + "tempOn").invoke(Message.JSON).then(json => {});
 			} else {
 				temperature = 0;
 				tempSlider.active = false;
-				heaterState = 0;	
+				heaterState = 0;
+				if (deviceURL != "") new Message(deviceURL + "tempOff").invoke(Message.JSON).then(json => {});	
 			} 
 			application.distribute("updateTempString");
 			application.distribute("adjustTempSlider");        }    }}));

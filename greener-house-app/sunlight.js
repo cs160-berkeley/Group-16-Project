@@ -1,4 +1,4 @@
-import {name_h, naviBar_h, padding, currentScreen, currSunlight, updateFreq} from "main";
+import {name_h, naviBar_h, padding, currentScreen, currSunlight, updateFreq, deviceURL } from "main";
 import { HorizontalSlider, HorizontalSliderBehavior } from 'sliders';
 import { SwitchButton, SwitchButtonBehavior } from 'switch';
 
@@ -30,7 +30,7 @@ export var SunlightScreen = Container.template($ => ({   left: 0, right: 0, top
 			    Picture($, {
 			      	left: 0, right: 0, top: padding, bottom: 0, url: sunImg, height: 64, width: 64,
 			    }),
-			      
+			    
 			    Label($, { 			         left: 0, right: 0, top: padding, bottom: 0, style: regularB, 			         string: "Switch to adjust light exposure" 			    }),
 			      
 			    lightSwitch = new MySwitch({id: "light", value: sunlightState}),
@@ -48,12 +48,14 @@ export var SunlightScreen = Container.template($ => ({   left: 0, right: 0, top
 			if (this.data.value == 1) {
 				lightSlider.active = true;
 				sunlightState = 1;
-				if (lightValue > 0) {application.distribute("onToggleLight", 1)}
-	            else {application.distribute("onToggleLight", 0)}
+				//if (lightValue > 0) {application.distribute("onToggleLight", 1)}
+	            //else {application.distribute("onToggleLight", 0)}
+	            if (deviceURL != "") new Message(deviceURL + "sunlightOn").invoke(Message.JSON).then(json => {});
 			} else {
 				lightValue = 0;
 				lightSlider.active = false;
 				sunlightState = 0;
+				if (deviceURL != "") new Message(deviceURL + "sunlightOff").invoke(Message.JSON).then(json => {});
 			} 
 			application.distribute("updateLightString");
 			application.distribute("adjustLightSlider");
@@ -77,5 +79,5 @@ var lightSlider;
 
 // Sunlight diagram
 let SAMPLEGRAPH = require("creations/sampleGraph");let sunlightDiagram = Column.template($ => ({	left: 0, right: 0, top: 0, bottom: undefined, skin: transparentSkin,	Behavior: class extends Behavior {		generateTestValue(container) {
-			let duration = 4000;			let fraction = (container.time % duration) / duration;			let value = Math.round(fraction * (currSunlight / 100));			//value = (1 + value) / 2;			return value;		}		onDisplaying(container) {			container.interval = updateFreq;			container.start();		}		onTimeChanged(container) {			let value = this.generateTestValue(container);			container.firstMeter.distribute("onMeterLevelChanged", value);		}	},	contents: [
+			let duration = 4000;			let fraction = (container.time % duration) / duration;			let value = Math.sin(fraction * (2 * Math.PI));			value = (1 + value) / 2;			return currSunlight / 100;		}		onDisplaying(container) {			container.interval = updateFreq;			container.start();		}		onTimeChanged(container) {			let value = this.generateTestValue(container);			container.firstMeter.distribute("onMeterLevelChanged", value);		}	},	contents: [
 		Label($, { 	         left: 0, right: 0, top: 0, bottom: undefined, style: regularB, 	         string: "Current sunlight: " + Math.round(currSunlight) + "%",	         Behavior: class extends Behavior{				updateState(container, string) {					container.string = "Current natural light: " + Math.round(currSunlight) + "%";				}			 }      	}),		SAMPLEGRAPH.LevelMeterWithProbe($.first, { left: padding / 2, right: 0, top: padding, bottom: 0, height:80, name:'firstMeter' }),		]}));let data = { 	first : { numSamples : 22, barColor : "#cfb11f", currentBarColor : "black" },}

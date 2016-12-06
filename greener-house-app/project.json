@@ -1,7 +1,7 @@
 {
     "title":"greener_house_app",
     "description":"This template can be used to create a basic KinomaJS application .",
-    "id":"greener-house-app.project.kinoma.marvell.com",
+    "id":"sample.companion.app",
     "tags":[
         "emptySample"
     ],

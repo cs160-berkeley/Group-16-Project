@@ -1,4 +1,4 @@
-import { name_h, naviBar_h, padding, drawerScreen, currentScreen, Home, currTemperature, updateFreq} from "main";
+import { name_h, naviBar_h, padding, drawerScreen, currentScreen, Home, currTemperature, updateFreq, deviceURL} from "main";
 import { SwitchButton, SwitchButtonBehavior } from 'switch';
 import { HorizontalSlider, HorizontalSliderBehavior } from 'sliders';
 
@@ -47,8 +47,7 @@ export var Drawer = Container.template($ => ({   left: 0, right: undefined, top
 		      		}),
       			]
       		}),
-      		
-      		new updateSection,
+     		//new updateSection,
       	]
       }),   ]}));
 
@@ -69,7 +68,8 @@ let connectBtn = Container.template($ => ({    left: 0, right: 0, top: 0, botto
             application.distribute("getHumidity");
 			application.distribute("getTemperature");
 			application.distribute("getSunlight");
-			application.distribute("getAirflow");        },        onTouchEnded: function(content){			content.skin = this.upSkin;
+			application.distribute("getAirflow");
+			if (deviceURL != "") new Message(deviceURL + "connect").invoke(Message.JSON).then(json => {});        },        onTouchEnded: function(content){			content.skin = this.upSkin;
 			content.btnLabel.style = titleW;        },    }),
     contents: [        new Label({ top: 0, bottom: 0, left: 0, right: 0, name: "btnLabel",
         style: titleW, string: "Connect to Greenhouse" })   ] }));
@@ -85,6 +85,7 @@ var connect;
 				currTemperature = (currTemperature - 32) * (5 / 9);
 	            currTemperature = Math.round(currTemperature);
 			} 
+			if (deviceURL != "") new Message(deviceURL + "changeDegree").invoke(Message.JSON).then(json => {});
 			application.distribute("switchDegreeFormat");
 			application.distribute("updateState");        }    }}));
 var degreesSwitch;
